@@ -1,6 +1,7 @@
 const express = require('express')
 const router = new express.Router()
 const User = require('../models/user')
+const auth = require('../middleware/auth')
 
 //create user
 router.post('/users', async (req, res) => {
@@ -8,7 +9,8 @@ router.post('/users', async (req, res) => {
 
     try{
         const savedUser = await user.save()
-        res.status(201).send(savedUser)
+        const token = await user.generateAuthToken()
+        res.status(201).send({savedUser, token})
 
     }catch(e){
         res.status(400).send(e)
@@ -16,21 +18,25 @@ router.post('/users', async (req, res) => {
     
 })
 
-//get all users
-router.get('/users', async (req, res) => {
-
+//login
+router.post('/users/login', async (req, res) => {
     try{
-        const users = await User.find({})
-        res.status(200).send(users)
+        const user = await User.findByCredentials(req.body.email, req.body.password)
+        const token = await user.generateAuthToken()
+        res.send({user, token})
 
-    }catch(e){
-        res.status(500).send(e)
+    }catch(e) {
+        res.status(400).send(e)
     }
+})
 
+//get profile of logged in user
+router.get('/users/me', auth, async (req, res) => {
+    res.send(req.user)
 })
 
 //get user by id
-router.get('/users/:id', async (req, res) => {
+router.get('/users/:id', auth, async (req, res) => {
     const _id = req.params.id 
 
     try{
@@ -48,7 +54,7 @@ router.get('/users/:id', async (req, res) => {
 })
 
 //update user
-router.patch('/users/:id', async (req, res) => {
+router.patch('/users/:id', auth, async (req, res) => {
     const _id = req.params.id
     const updates = Object.keys(req.body)
     const allowedUpdates = ['name', 'email', 'password', 'age']
@@ -65,7 +71,7 @@ router.patch('/users/:id', async (req, res) => {
         if(!updatedUser){
             return res.status(404).send('User not found!')
         }
-        
+
         updates.forEach((update) => updatedUser[update] = req.body[update])
         await updatedUser.save()
 
@@ -78,7 +84,7 @@ router.patch('/users/:id', async (req, res) => {
 })
 
 //delete user
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/:id', auth, async (req, res) => {
     const _id = req.params.id
 
     try{
