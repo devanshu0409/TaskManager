@@ -49,6 +49,13 @@ const userSchema = new mongoose.Schema({
     }]
 })
 
+//adding virtual property
+userSchema.virtual('tasks', {
+    ref: 'Task',
+    localField: '_id',
+    foreignField: 'owner'
+})
+
 //return public user profile
 userSchema.methods.toJSON = function() {
     const user = this

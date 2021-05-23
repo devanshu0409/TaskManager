@@ -81,6 +81,19 @@ router.get('/users/:id', auth, async (req, res) => {
 
 })
 
+//get all users
+router.get('/users', async (req, res) => {
+
+    try{
+        const users = await User.find({})
+        res.status(200).send(users)
+
+    }catch(e){
+        res.status(500).send(e)
+    }
+
+})
+
 //update logged in user
 router.patch('/users/me', auth, async (req, res) => {
     const updates = Object.keys(req.body)
